@@ -132,6 +132,27 @@ export default function DashboardPage() {
                         <Button className="mt-2" size="sm" variant="outline">Manage</Button>
                       </Link>
                     </div>
+                    <div className="bg-indigo-50 p-4 rounded-lg">
+                      <h3 className="text-md font-medium text-indigo-900">Discussions</h3>
+                      <p className="text-sm text-indigo-700 mt-1">Interact with your students</p>
+                      <Link href="/discussions">
+                        <Button className="mt-2" size="sm" variant="outline">Open Forum</Button>
+                      </Link>
+                    </div>
+                    <div className="bg-red-50 p-4 rounded-lg">
+                      <h3 className="text-md font-medium text-red-900">Announcements</h3>
+                      <p className="text-sm text-red-700 mt-1">Post important updates</p>
+                      <Link href="/announcements">
+                        <Button className="mt-2" size="sm" variant="outline">View All</Button>
+                      </Link>
+                    </div>
+                    <div className="bg-orange-50 p-4 rounded-lg">
+                      <h3 className="text-md font-medium text-orange-900">Quizzes</h3>
+                      <p className="text-sm text-orange-700 mt-1">Create and manage quizzes</p>
+                      <Link href="/quizzes">
+                        <Button className="mt-2" size="sm" variant="outline">Manage</Button>
+                      </Link>
+                    </div>
                   </>
                 ) : (
                   <>
@@ -154,6 +175,27 @@ export default function DashboardPage() {
                       <p className="text-sm text-purple-700 mt-1">View your academic progress</p>
                       <Link href="/grades">
                         <Button className="mt-2" size="sm" variant="outline">Check Grades</Button>
+                      </Link>
+                    </div>
+                    <div className="bg-yellow-50 p-4 rounded-lg">
+                      <h3 className="text-md font-medium text-yellow-900">Quizzes</h3>
+                      <p className="text-sm text-yellow-700 mt-1">Take quizzes and assessments</p>
+                      <Link href="/quizzes">
+                        <Button className="mt-2" size="sm" variant="outline">Take Quiz</Button>
+                      </Link>
+                    </div>
+                    <div className="bg-indigo-50 p-4 rounded-lg">
+                      <h3 className="text-md font-medium text-indigo-900">Discussions</h3>
+                      <p className="text-sm text-indigo-700 mt-1">Ask questions and collaborate</p>
+                      <Link href="/discussions">
+                        <Button className="mt-2" size="sm" variant="outline">Open Forum</Button>
+                      </Link>
+                    </div>
+                    <div className="bg-red-50 p-4 rounded-lg">
+                      <h3 className="text-md font-medium text-red-900">Announcements</h3>
+                      <p className="text-sm text-red-700 mt-1">Stay updated with news</p>
+                      <Link href="/announcements">
+                        <Button className="mt-2" size="sm" variant="outline">View All</Button>
                       </Link>
                     </div>
                   </>
