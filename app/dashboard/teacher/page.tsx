@@ -104,26 +104,137 @@ export default function TeacherDashboard() {
     teacherSidebarItems.push({ name: 'User Management', href: '/admin/users', icon: Shield });
   }
 
-  const teachingStats = [
-    { title: 'Active Courses', value: '5', icon: BookOpen, color: 'bg-blue-100 text-blue-600' },
-    { title: 'Total Students', value: '127', icon: Users, color: 'bg-green-100 text-green-600' },
-    { title: 'Pending Grades', value: '18', icon: Award, color: 'bg-orange-100 text-orange-600' },
-    { title: 'This Week Hours', value: '32', icon: Clock, color: 'bg-purple-100 text-purple-600' }
+  // Mock student data
+  const mockStudents = [
+    {
+      id: '1',
+      fullName: 'Sarah Johnson',
+      email: 'sarah.johnson@email.com',
+      username: 'sarah_j',
+      avatar: '/avatars/sarah.jpg',
+      role: 'STUDENT',
+      grade: 'SECOND',
+      enrolledCourses: ['Advanced Mathematics', 'Statistics'],
+      averageGrade: 92.5,
+      totalAssignments: 24,
+      completedAssignments: 22,
+      attendanceRate: 96,
+      lastActive: '2 hours ago',
+      status: 'active'
+    },
+    {
+      id: '2',
+      fullName: 'Michael Chen',
+      email: 'michael.chen@email.com',
+      username: 'mike_c',
+      avatar: '/avatars/michael.jpg',
+      role: 'STUDENT',
+      grade: 'THIRD',
+      enrolledCourses: ['Calculus I', 'Linear Algebra'],
+      averageGrade: 88.3,
+      totalAssignments: 18,
+      completedAssignments: 16,
+      attendanceRate: 92,
+      lastActive: '1 day ago',
+      status: 'active'
+    },
+    {
+      id: '3',
+      fullName: 'Emily Rodriguez',
+      email: 'emily.rodriguez@email.com',
+      username: 'emily_r',
+      avatar: '/avatars/emily.jpg',
+      role: 'STUDENT',
+      grade: 'FIRST',
+      enrolledCourses: ['Advanced Mathematics', 'Statistics', 'Calculus I'],
+      averageGrade: 95.1,
+      totalAssignments: 32,
+      completedAssignments: 30,
+      attendanceRate: 98,
+      lastActive: '30 minutes ago',
+      status: 'active'
+    },
+    {
+      id: '4',
+      fullName: 'David Kim',
+      email: 'david.kim@email.com',
+      username: 'david_k',
+      avatar: '/avatars/david.jpg',
+      role: 'STUDENT',
+      grade: 'SECOND',
+      enrolledCourses: ['Linear Algebra'],
+      averageGrade: 78.9,
+      totalAssignments: 12,
+      completedAssignments: 9,
+      attendanceRate: 84,
+      lastActive: '3 days ago',
+      status: 'at-risk'
+    },
+    {
+      id: '5',
+      fullName: 'Jessica Wang',
+      email: 'jessica.wang@email.com',
+      username: 'jessica_w',
+      avatar: '/avatars/jessica.jpg',
+      role: 'STUDENT',
+      grade: 'THIRD',
+      enrolledCourses: ['Advanced Mathematics', 'Calculus I'],
+      averageGrade: 90.7,
+      totalAssignments: 20,
+      completedAssignments: 19,
+      attendanceRate: 95,
+      lastActive: '1 hour ago',
+      status: 'active'
+    },
+    {
+      id: '6',
+      fullName: 'Alex Thompson',
+      email: 'alex.thompson@email.com',
+      username: 'alex_t',
+      avatar: '/avatars/alex.jpg',
+      role: 'STUDENT',
+      grade: 'FIRST',
+      enrolledCourses: ['Statistics'],
+      averageGrade: 85.6,
+      totalAssignments: 15,
+      completedAssignments: 14,
+      attendanceRate: 89,
+      lastActive: '5 hours ago',
+      status: 'active'
+    }
   ];
 
-  const recentCourses = [
-    { id: 1, name: 'Advanced Mathematics', students: 32, completion: 78, status: 'active' },
-    { id: 2, name: 'Calculus I', students: 28, completion: 92, status: 'active' },
-    { id: 3, name: 'Statistics', students: 24, completion: 65, status: 'active' },
-    { id: 4, name: 'Linear Algebra', students: 19, completion: 45, status: 'draft' }
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterGrade, setFilterGrade] = useState('all');
+  const [showStudentDetail, setShowStudentDetail] = useState(false);
+
+  const filteredStudents = mockStudents.filter(student => {
+    const matchesStatus = filterStatus === 'all' || student.status === filterStatus;
+    const matchesGrade = filterGrade === 'all' || student.grade === filterGrade;
+    const matchesSearch = !searchQuery || 
+      student.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.email.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesStatus && matchesGrade && matchesSearch;
+  });
+
+  const studentStats = [
+    { title: 'Total Students', value: mockStudents.length.toString(), icon: Users, color: 'bg-blue-100 text-blue-600' },
+    { title: 'Active Students', value: mockStudents.filter(s => s.status === 'active').length.toString(), icon: CheckCircle, color: 'bg-green-100 text-green-600' },
+    { title: 'At-Risk Students', value: mockStudents.filter(s => s.status === 'at-risk').length.toString(), icon: AlertCircle, color: 'bg-red-100 text-red-600' },
+    { title: 'Average Grade', value: (mockStudents.reduce((acc, s) => acc + s.averageGrade, 0) / mockStudents.length).toFixed(1) + '%', icon: Star, color: 'bg-yellow-100 text-yellow-600' }
   ];
 
-  const pendingTasks = [
-    { task: 'Grade Midterm Exams - Calculus I', urgency: 'high', due: '2 days' },
-    { task: 'Review Assignment Submissions', urgency: 'medium', due: '5 days' },
-    { task: 'Prepare Week 8 Materials', urgency: 'low', due: '1 week' },
-    { task: 'Student Progress Reviews', urgency: 'medium', due: '3 days' }
-  ];
+  const getGradeBadgeColor = (grade) => {
+    if (grade >= 90) return 'bg-green-100 text-green-800';
+    if (grade >= 80) return 'bg-blue-100 text-blue-800';
+    if (grade >= 70) return 'bg-yellow-100 text-yellow-800';
+    return 'bg-red-100 text-red-800';
+  };
+
+  const getStatusBadgeColor = (status) => {
+    return status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -151,7 +262,7 @@ export default function TeacherDashboard() {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     type="text"
-                    placeholder="Search courses, students, assignments..."
+                    placeholder="Search students by name or email..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10 pr-4"
@@ -322,19 +433,19 @@ export default function TeacherDashboard() {
         {/* Main Content */}
         <div className="flex-1 lg:pl-0">
           <main className="px-4 sm:px-6 lg:px-8 py-8">
-            {/* Welcome Section */}
+            {/* Student Management Header */}
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900">
-                Good Morning, Prof. {user.fullName.split(' ')[0]}! 👨‍🏫
+                Student Management Dashboard 👨‍🎓
               </h1>
               <p className="text-gray-600 mt-2">
-                Ready to inspire minds today? Here's your teaching overview.
+                Manage and monitor all your students' progress, performance, and engagement.
               </p>
             </div>
 
-            {/* Teaching Stats */}
+            {/* Student Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              {teachingStats.map((stat, index) => {
+              {studentStats.map((stat, index) => {
                 const Icon = stat.icon;
                 return (
                   <Card key={index}>
@@ -354,154 +465,296 @@ export default function TeacherDashboard() {
               })}
             </div>
 
-            {/* Main Dashboard Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Course Management */}
-              <div className="lg:col-span-2 space-y-6">
-                <Card>
-                  <CardHeader>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <CardTitle>My Courses</CardTitle>
-                        <CardDescription>Manage your active courses and track progress</CardDescription>
-                      </div>
-                      <Link href="/courses/create">
-                        <Button size="sm">
-                          <Plus className="h-4 w-4 mr-2" />
-                          New Course
-                        </Button>
-                      </Link>
+            {/* Student Management Content */}
+            <div className="space-y-6">
+              {/* Filters and Search */}
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1">
+                      <Input
+                        placeholder="Search students by name or email..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full"
+                      />
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {recentCourses.map((course) => (
-                        <div key={course.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                          <div className="flex items-center space-x-4">
-                            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                              <BookOpen className="h-6 w-6 text-blue-600" />
-                            </div>
-                            <div>
-                              <h3 className="font-medium text-gray-900">{course.name}</h3>
-                              <p className="text-sm text-gray-500">{course.students} students enrolled</p>
-                            </div>
+                    <div className="flex gap-2">
+                      <select
+                        value={filterStatus}
+                        onChange={(e) => setFilterStatus(e.target.value)}
+                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="all">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="at-risk">At Risk</option>
+                      </select>
+                      <select
+                        value={filterGrade}
+                        onChange={(e) => setFilterGrade(e.target.value)}
+                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="all">All Grades</option>
+                        <option value="FIRST">First Year</option>
+                        <option value="SECOND">Second Year</option>
+                        <option value="THIRD">Third Year</option>
+                      </select>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Students List */}
+              <div className="grid gap-6">
+                {filteredStudents.map((student) => (
+                  <Card key={student.id} className="hover:shadow-lg transition-shadow">
+                    <CardContent className="pt-6">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                            <User className="h-8 w-8 text-blue-600" />
                           </div>
-                          <div className="flex items-center space-x-4">
-                            <div className="text-right">
-                              <p className="text-sm font-medium text-gray-900">{course.completion}% Complete</p>
-                              <div className="w-20 bg-gray-200 rounded-full h-2 mt-1">
-                                <div 
-                                  className="bg-blue-600 h-2 rounded-full" 
-                                  style={{ width: `${course.completion}%` }}
-                                ></div>
+                          <div className="space-y-1">
+                            <div className="flex items-center space-x-2">
+                              <h3 className="text-lg font-semibold text-gray-900">{student.fullName}</h3>
+                              <Badge className={getStatusBadgeColor(student.status)}>
+                                {student.status === 'active' ? 'Active' : 'At Risk'}
+                              </Badge>
+                            </div>
+                            <p className="text-gray-600">{student.email}</p>
+                            <p className="text-sm text-gray-500">@{student.username} • {student.grade} Year</p>
+                            <p className="text-xs text-gray-400">Last active: {student.lastActive}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="text-right space-y-2">
+                          <Badge className={getGradeBadgeColor(student.averageGrade)}>
+                            {student.averageGrade.toFixed(1)}% Average
+                          </Badge>
+                          <div className="text-sm text-gray-600">
+                            <p>{student.attendanceRate}% Attendance</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Enrolled Courses */}
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-900 mb-2">Enrolled Courses</h4>
+                          <div className="space-y-1">
+                            {student.enrolledCourses.map((course, index) => (
+                              <div key={index} className="text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                {course}
                               </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Assignment Progress */}
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-900 mb-2">Assignment Progress</h4>
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span>Completed:</span>
+                              <span className="font-medium">{student.completedAssignments}/{student.totalAssignments}</span>
                             </div>
-                            <div className="flex space-x-2">
-                              <Link href={`/courses/${course.id}`}>
-                                <Button variant="outline" size="sm">
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </Link>
-                              <Button variant="outline" size="sm">
-                                <Edit className="h-4 w-4" />
-                              </Button>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className="bg-green-600 h-2 rounded-full" 
+                                style={{ width: `${(student.completedAssignments / student.totalAssignments) * 100}%` }}
+                              ></div>
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {Math.round((student.completedAssignments / student.totalAssignments) * 100)}% Complete
                             </div>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
 
-                {/* Quick Actions */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Quick Teaching Actions</CardTitle>
-                    <CardDescription>Common tasks for efficient teaching</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <Link href="/assignments" className="flex flex-col items-center p-4 text-center bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-                        <FileText className="h-8 w-8 text-blue-600 mb-2" />
-                        <span className="text-sm font-medium text-gray-900">Create Assignment</span>
-                      </Link>
-                      <Link href="/quizzes" className="flex flex-col items-center p-4 text-center bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
-                        <GraduationCap className="h-8 w-8 text-green-600 mb-2" />
-                        <span className="text-sm font-medium text-gray-900">New Quiz</span>
-                      </Link>
-                      <Link href="/announcements" className="flex flex-col items-center p-4 text-center bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors">
-                        <Bell className="h-8 w-8 text-orange-600 mb-2" />
-                        <span className="text-sm font-medium text-gray-900">Announce</span>
-                      </Link>
-                      <Link href="/grades" className="flex flex-col items-center p-4 text-center bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
-                        <Award className="h-8 w-8 text-purple-600 mb-2" />
-                        <span className="text-sm font-medium text-gray-900">Grade Book</span>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Right Sidebar */}
-              <div className="space-y-6">
-                {/* Pending Tasks */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Pending Tasks</CardTitle>
-                    <CardDescription>Items requiring your attention</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {pendingTasks.map((task, index) => (
-                        <div key={index} className="flex items-start space-x-3">
-                          <div className={`w-2 h-2 rounded-full mt-2 ${
-                            task.urgency === 'high' ? 'bg-red-500' :
-                            task.urgency === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
-                          }`}></div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-900">{task.task}</p>
-                            <p className="text-xs text-gray-500">Due in {task.due}</p>
-                          </div>
+                        {/* Actions */}
+                        <div className="flex flex-col space-y-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedStudent(student);
+                              setShowStudentDetail(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </Button>
+                          <Button size="sm" variant="outline">
+                            <MessageSquare className="h-4 w-4 mr-2" />
+                            Message
+                          </Button>
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Class Performance */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Class Performance</CardTitle>
-                    <CardDescription>Overall student progress</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Average Grade</span>
-                        <span className="text-lg font-semibold text-green-600">84.5%</span>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Completion Rate</span>
-                        <span className="text-lg font-semibold text-blue-600">92%</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Active Students</span>
-                        <span className="text-lg font-semibold text-purple-600">89%</span>
-                      </div>
-                      <Link href="/analytics">
-                        <Button variant="outline" size="sm" className="w-full">
-                          <PieChart className="h-4 w-4 mr-2" />
-                          View Detailed Analytics
-                        </Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
+
+              {filteredStudents.length === 0 && (
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center py-12">
+                      <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No students found</h3>
+                      <p className="text-gray-500">Try adjusting your search or filter criteria.</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </main>
         </div>
       </div>
+
+      {/* Student Detail Modal */}
+      {showStudentDetail && selectedStudent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                    <User className="h-8 w-8 text-blue-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">{selectedStudent.fullName}</h2>
+                    <p className="text-gray-600">{selectedStudent.email}</p>
+                    <div className="flex items-center space-x-2 mt-1">
+                      <Badge className={getStatusBadgeColor(selectedStudent.status)}>
+                        {selectedStudent.status === 'active' ? 'Active' : 'At Risk'}
+                      </Badge>
+                      <Badge className={getGradeBadgeColor(selectedStudent.averageGrade)}>
+                        {selectedStudent.averageGrade.toFixed(1)}% Average
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowStudentDetail(false)}
+                  className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Student Overview */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-600">{selectedStudent.attendanceRate}%</div>
+                      <div className="text-sm text-gray-600">Attendance Rate</div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">{selectedStudent.completedAssignments}/{selectedStudent.totalAssignments}</div>
+                      <div className="text-sm text-gray-600">Assignments Done</div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-purple-600">{selectedStudent.enrolledCourses.length}</div>
+                      <div className="text-sm text-gray-600">Enrolled Courses</div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Student Details */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Student Information</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Full Name:</span>
+                        <span className="font-medium">{selectedStudent.fullName}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Username:</span>
+                        <span className="font-medium">@{selectedStudent.username}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Email:</span>
+                        <span className="font-medium">{selectedStudent.email}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Grade Level:</span>
+                        <span className="font-medium">{selectedStudent.grade} Year</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Last Active:</span>
+                        <span className="font-medium">{selectedStudent.lastActive}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Enrolled Courses</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {selectedStudent.enrolledCourses.map((course, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                          <div className="flex items-center space-x-2">
+                            <BookOpen className="h-4 w-4 text-blue-600" />
+                            <span className="text-sm font-medium">{course}</span>
+                          </div>
+                          <Button size="sm" variant="outline">
+                            <Eye className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Quick Actions */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm">
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Send Message
+                    </Button>
+                    <Button size="sm" variant="outline">
+                      <Award className="h-4 w-4 mr-2" />
+                      View Grades
+                    </Button>
+                    <Button size="sm" variant="outline">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Check Attendance
+                    </Button>
+                    <Button size="sm" variant="outline">
+                      <FileText className="h-4 w-4 mr-2" />
+                      Assignment History
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Close dropdowns when clicking outside */}
       {showAccountMenu && (
