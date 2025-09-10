@@ -4,6 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { Search, User, Settings } from 'lucide-react';
+import { UserRole } from '../types';
 import Link from 'next/link';
 
 export default function DashboardPage() {
@@ -103,6 +105,40 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {/* Global Navigation */}
+          <div className="mt-6 bg-white overflow-hidden shadow-sm rounded-lg">
+            <div className="px-4 py-5 sm:p-6">
+              <h2 className="text-lg font-medium text-gray-900 mb-4">
+                Navigation
+              </h2>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h3 className="text-md font-medium text-blue-900">Search</h3>
+                  <p className="text-sm text-blue-700 mt-1">Find courses, content & more</p>
+                  <Link href="/search">
+                    <Button className="mt-2" size="sm" variant="outline">Search Platform</Button>
+                  </Link>
+                </div>
+                <div className="bg-purple-50 p-4 rounded-lg">
+                  <h3 className="text-md font-medium text-purple-900">My Profile</h3>
+                  <p className="text-sm text-purple-700 mt-1">Manage your account</p>
+                  <Link href="/profile">
+                    <Button className="mt-2" size="sm" variant="outline">View Profile</Button>
+                  </Link>
+                </div>
+                {user.role === UserRole.ADMIN && (
+                  <div className="bg-red-50 p-4 rounded-lg">
+                    <h3 className="text-md font-medium text-red-900">User Management</h3>
+                    <p className="text-sm text-red-700 mt-1">Manage all users and roles</p>
+                    <Link href="/admin/users">
+                      <Button className="mt-2" size="sm" variant="outline">Admin Panel</Button>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="mt-6 bg-white overflow-hidden shadow-sm rounded-lg">
             <div className="px-4 py-5 sm:p-6">
               <h2 className="text-lg font-medium text-gray-900 mb-4">
@@ -153,6 +189,27 @@ export default function DashboardPage() {
                         <Button className="mt-2" size="sm" variant="outline">Manage</Button>
                       </Link>
                     </div>
+                    <div className="bg-teal-50 p-4 rounded-lg">
+                      <h3 className="text-md font-medium text-teal-900">Resources</h3>
+                      <p className="text-sm text-teal-700 mt-1">Manage course materials</p>
+                      <Link href="/resources">
+                        <Button className="mt-2" size="sm" variant="outline">View Files</Button>
+                      </Link>
+                    </div>
+                    <div className="bg-pink-50 p-4 rounded-lg">
+                      <h3 className="text-md font-medium text-pink-900">Calendar</h3>
+                      <p className="text-sm text-pink-700 mt-1">View schedule and deadlines</p>
+                      <Link href="/calendar">
+                        <Button className="mt-2" size="sm" variant="outline">View Calendar</Button>
+                      </Link>
+                    </div>
+                    <div className="bg-cyan-50 p-4 rounded-lg">
+                      <h3 className="text-md font-medium text-cyan-900">Analytics</h3>
+                      <p className="text-sm text-cyan-700 mt-1">Track student progress</p>
+                      <Link href="/analytics">
+                        <Button className="mt-2" size="sm" variant="outline">View Analytics</Button>
+                      </Link>
+                    </div>
                   </>
                 ) : (
                   <>
@@ -196,6 +253,27 @@ export default function DashboardPage() {
                       <p className="text-sm text-red-700 mt-1">Stay updated with news</p>
                       <Link href="/announcements">
                         <Button className="mt-2" size="sm" variant="outline">View All</Button>
+                      </Link>
+                    </div>
+                    <div className="bg-teal-50 p-4 rounded-lg">
+                      <h3 className="text-md font-medium text-teal-900">Resources</h3>
+                      <p className="text-sm text-teal-700 mt-1">Access course materials</p>
+                      <Link href="/resources">
+                        <Button className="mt-2" size="sm" variant="outline">View Files</Button>
+                      </Link>
+                    </div>
+                    <div className="bg-pink-50 p-4 rounded-lg">
+                      <h3 className="text-md font-medium text-pink-900">Calendar</h3>
+                      <p className="text-sm text-pink-700 mt-1">View your schedule</p>
+                      <Link href="/calendar">
+                        <Button className="mt-2" size="sm" variant="outline">View Calendar</Button>
+                      </Link>
+                    </div>
+                    <div className="bg-cyan-50 p-4 rounded-lg">
+                      <h3 className="text-md font-medium text-cyan-900">Analytics</h3>
+                      <p className="text-sm text-cyan-700 mt-1">Track your progress</p>
+                      <Link href="/analytics">
+                        <Button className="mt-2" size="sm" variant="outline">View Progress</Button>
                       </Link>
                     </div>
                   </>
