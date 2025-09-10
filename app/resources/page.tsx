@@ -10,6 +10,7 @@ import { Input } from '../components/ui/input';
 import { Upload, File, Image as ImageIcon, Video, Music2, Archive, X, Search } from 'lucide-react';
 import Link from 'next/link';
 import { Resource, ResourceType, UserRole } from '../types';
+import { isPrivilegedTeacher } from '../utils/permissions';
 
 interface LocalResource extends Resource {
   fileName?: string;
@@ -128,7 +129,7 @@ export default function ResourcesPage() {
               <span className="text-sm font-medium text-gray-900">Resources</span>
             </div>
             <div className="flex items-center space-x-2">
-              {user.role === UserRole.TEACHER && (
+              {isPrivilegedTeacher(user) && (
                 <>
                   <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFilesSelected} />
                   <Button onClick={handleChooseFiles}>
@@ -193,7 +194,7 @@ export default function ResourcesPage() {
                       <Link href={r.url} target="_blank">
                         <Button size="sm" variant="outline">Open</Button>
                       </Link>
-                      {user.role === UserRole.TEACHER && (
+                      {isPrivilegedTeacher(user) && (
                         <Button size="sm" variant="outline" onClick={()=>handleRemove(r.id)}>
                           <X className="h-4 w-4" />
                         </Button>

@@ -10,6 +10,7 @@ import { Input } from '../components/ui/input';
 import { Plus, Search, Calendar, Clock, FileText, Users, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { Assignment, AssignmentType, UserRole } from '../types';
+import { isPrivilegedTeacher } from '../utils/permissions';
 
 export default function AssignmentsPage() {
   const { user, loading } = useAuth();
@@ -219,7 +220,7 @@ export default function AssignmentsPage() {
                 }
               </p>
             </div>
-            {user.role === UserRole.TEACHER && (
+            {isPrivilegedTeacher(user) && (
               <Link href="/assignments/create">
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
@@ -322,7 +323,7 @@ export default function AssignmentsPage() {
                           <ChevronRight className="h-4 w-4 ml-1" />
                         </Button>
                       </Link>
-                      {user.role === UserRole.TEACHER ? (
+                      {isPrivilegedTeacher(user) ? (
                         <Link href={`/assignments/${assignment.id}/edit`}>
                           <Button size="sm">Edit</Button>
                         </Link>

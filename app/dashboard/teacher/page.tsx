@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import { UserRole } from '../../types';
 import Link from 'next/link';
+import { isPrivilegedTeacher } from '../../utils/permissions';
 
 export default function TeacherDashboard() {
   const { user, logout, loading } = useAuth();
@@ -88,7 +89,7 @@ export default function TeacherDashboard() {
   const teacherSidebarItems = [
     { name: 'Dashboard', href: '/dashboard/teacher', icon: BarChart3, current: true },
     { name: 'My Courses', href: '/courses', icon: BookOpen },
-    { name: 'Create Course', href: '/courses/create', icon: Plus },
+    ...(isPrivilegedTeacher(user) ? [{ name: 'Create Course', href: '/courses/create', icon: Plus }] : []),
     { name: 'Assignments', href: '/assignments', icon: FileText },
     { name: 'Grade Book', href: '/grades', icon: Award },
     { name: 'Students', href: '/students', icon: Users },

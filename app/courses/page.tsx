@@ -11,6 +11,7 @@ import { Select } from '../components/ui/select';
 import { Plus, Search, Filter, Users, Calendar, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { Course, CourseStatus, UserRole } from '../types';
+import { isPrivilegedTeacher } from '../utils/permissions';
 
 export default function CoursesPage() {
   const { user, loading } = useAuth();
@@ -200,7 +201,7 @@ export default function CoursesPage() {
                 }
               </p>
             </div>
-            {user.role === UserRole.TEACHER && (
+            {isPrivilegedTeacher(user) && (
               <Link href="/courses/create">
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />

@@ -10,6 +10,7 @@ import { Textarea } from '../../components/ui/textarea';
 import { ArrowLeft, Save, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { CreateCourseData, CourseStatus, UserRole } from '../../types';
+import { isPrivilegedTeacher } from '../../utils/permissions';
 
 export default function CreateCoursePage() {
   const { user, loading } = useAuth();
@@ -26,8 +27,8 @@ export default function CreateCoursePage() {
   const [errors, setErrors] = useState<Partial<CreateCourseData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Redirect non-teachers
-  if (!loading && user?.role !== UserRole.TEACHER) {
+  // Redirect if not privileged email
+  if (!loading && !isPrivilegedTeacher(user)) {
     router.push('/courses');
     return null;
   }

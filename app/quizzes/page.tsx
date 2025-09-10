@@ -10,6 +10,7 @@ import { Input } from '../components/ui/input';
 import { Plus, Search, Clock, Users, CheckCircle, AlertCircle, BookOpen, Trophy } from 'lucide-react';
 import Link from 'next/link';
 import { Quiz, UserRole, QuizAttempt, AttemptStatus } from '../types';
+import { isPrivilegedTeacher } from '../utils/permissions';
 
 interface QuizWithAttempt extends Quiz {
   attemptCount?: number;
@@ -251,7 +252,7 @@ export default function QuizzesPage() {
                 }
               </p>
             </div>
-            {user.role === UserRole.TEACHER && (
+            {isPrivilegedTeacher(user) && (
               <Link href="/quizzes/create">
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
@@ -427,7 +428,7 @@ export default function QuizzesPage() {
                             {user.role === UserRole.TEACHER ? 'Manage' : 'View Details'}
                           </Button>
                         </Link>
-                        {user.role === UserRole.TEACHER ? (
+                    {isPrivilegedTeacher(user) ? (
                           <Link href={`/quizzes/${quiz.id}/edit`}>
                             <Button size="sm">Edit</Button>
                           </Link>
@@ -460,7 +461,7 @@ export default function QuizzesPage() {
                     : 'No quizzes are available at the moment.'
                 }
               </div>
-              {user.role === UserRole.TEACHER && !searchTerm && statusFilter === 'all' && (
+              {isPrivilegedTeacher(user) && !searchTerm && statusFilter === 'all' && (
                 <Link href="/quizzes/create">
                   <Button>
                     <Plus className="h-4 w-4 mr-2" />
