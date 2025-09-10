@@ -36,6 +36,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [showAccountMenu, setShowAccountMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -122,9 +123,72 @@ export default function DashboardPage() {
 
             {/* Right side - Account Menu */}
             <div className="flex items-center space-x-4">
-              <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full">
-                <Bell className="h-5 w-5" />
-              </button>
+              {/* Notifications */}
+              <div className="relative">
+                <button 
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full relative"
+                >
+                  <Bell className="h-5 w-5" />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                </button>
+
+                {/* Notifications Panel */}
+                {showNotifications && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border z-50">
+                    <div className="p-4 border-b">
+                      <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+                    </div>
+                    <div className="max-h-96 overflow-y-auto">
+                      <div className="p-3 border-b hover:bg-gray-50">
+                        <div className="flex items-start space-x-3">
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <BookOpen className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900">New assignment posted</p>
+                            <p className="text-xs text-gray-500">Calculus Problem Set due Friday</p>
+                            <p className="text-xs text-gray-400 mt-1">2 hours ago</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-3 border-b hover:bg-gray-50">
+                        <div className="flex items-start space-x-3">
+                          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <Award className="w-4 h-4 text-green-600" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900">Grade available</p>
+                            <p className="text-xs text-gray-500">Your quiz score: 87%</p>
+                            <p className="text-xs text-gray-400 mt-1">5 hours ago</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-3 border-b hover:bg-gray-50">
+                        <div className="flex items-start space-x-3">
+                          <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                            <MessageSquare className="w-4 h-4 text-purple-600" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900">Discussion reply</p>
+                            <p className="text-xs text-gray-500">Prof. Smith replied to your question</p>
+                            <p className="text-xs text-gray-400 mt-1">1 day ago</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-3 border-t">
+                      <Link 
+                        href="/announcements" 
+                        className="text-sm text-blue-600 hover:text-blue-800"
+                        onClick={() => setShowNotifications(false)}
+                      >
+                        View all notifications
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
               
               <div className="relative">
                 <button
@@ -153,12 +217,12 @@ export default function DashboardPage() {
                       My Profile
                     </Link>
                     <Link
-                      href="/profile"
+                      href="/settings"
                       className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       onClick={() => setShowAccountMenu(false)}
                     >
                       <Settings className="h-4 w-4 mr-3" />
-                      Account Settings
+                      Settings
                     </Link>
                     <button
                       onClick={() => {
@@ -419,11 +483,17 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Close account menu when clicking outside */}
+      {/* Close dropdowns when clicking outside */}
       {showAccountMenu && (
         <div 
           className="fixed inset-0 z-30" 
           onClick={() => setShowAccountMenu(false)}
+        />
+      )}
+      {showNotifications && (
+        <div 
+          className="fixed inset-0 z-30" 
+          onClick={() => setShowNotifications(false)}
         />
       )}
     </div>

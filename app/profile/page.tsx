@@ -177,9 +177,6 @@ export default function ProfilePage() {
               <span className="text-sm font-medium text-gray-900">Profile</span>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">
-                Welcome, {user.fullName}
-              </span>
               <Link href="/dashboard">
                 <Button variant="outline" size="sm">
                   Dashboard
