@@ -1,6 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '../components/ui/button';
@@ -45,7 +48,8 @@ interface SearchFilters {
   course: string;
 }
 
-export default function SearchPage() {
+// Component that uses searchParams (needs to be wrapped in Suspense)
+function SearchContent() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -561,5 +565,18 @@ export default function SearchPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+// Main component with Suspense boundary
+export default function SearchPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Loading search...</div>
+      </div>
+    }>
+      <SearchContent />
+    </Suspense>
   );
 }

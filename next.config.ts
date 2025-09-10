@@ -9,6 +9,10 @@ const nextConfig: NextConfig = {
     // Skip ESLint during build
     ignoreDuringBuilds: true,
   },
+  experimental: {
+    // Enable partial prerendering for better performance
+    ppr: false,
+  },
 };
 
 export default nextConfig;
