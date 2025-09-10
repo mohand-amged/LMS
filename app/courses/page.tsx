@@ -12,6 +12,7 @@ import { Plus, Search, Filter, Users, Calendar, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { Course, CourseStatus, UserRole } from '../types';
 import { isPrivilegedTeacher } from '../utils/permissions';
+import { useToast } from '../components/ui/toast';
 
 export default function CoursesPage() {
   const { user, loading } = useAuth();
@@ -21,11 +22,34 @@ export default function CoursesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<CourseStatus | 'ALL'>('ALL');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
+  const { addToast } = useToast();
 
-  // Mock data for courses
-  useEffect(() => {
-    if (user) {
-      const mockCourses: Course[] = [
+  // Load courses from storage, seed if empty
+  const loadCourses = () => {
+    const storedCourses = localStorage.getItem('lms_courses');
+    let allCourses: Course[] = [];
+
+    if (storedCourses) {
+      try {
+        const parsed = JSON.parse(storedCourses) as any[];
+        allCourses = parsed.map(c => ({
+          ...c,
+          startDate: c.startDate ? new Date(c.startDate) : undefined,
+          endDate: c.endDate ? new Date(c.endDate) : undefined,
+          createdAt: new Date(c.createdAt),
+          updatedAt: new Date(c.updatedAt),
+          teacher: c.teacher ? {
+            ...c.teacher,
+            createdAt: new Date(c.teacher.createdAt),
+            updatedAt: new Date(c.teacher.updatedAt)
+          } : undefined
+        }));
+      } catch {}
+    }
+
+    // Seed if empty
+    if (allCourses.length === 0 && user) {
+      allCourses = [
         {
           id: '1',
           title: 'Introduction to Mathematics',
@@ -38,7 +62,7 @@ export default function CoursesPage() {
           endDate: new Date('2024-05-15'),
           createdAt: new Date('2024-01-01'),
           updatedAt: new Date('2024-01-01'),
-          teacherId: user.role === UserRole.TEACHER ? user.id : 'demo-teacher-1',
+          teacherId: 'demo-teacher-1',
           teacher: {
             id: 'demo-teacher-1',
             fullName: 'John Smith',
@@ -60,7 +84,7 @@ export default function CoursesPage() {
           endDate: new Date('2024-06-01'),
           createdAt: new Date('2024-01-15'),
           updatedAt: new Date('2024-01-15'),
-          teacherId: user.role === UserRole.TEACHER ? user.id : 'demo-teacher-1',
+          teacherId: 'demo-teacher-1',
           teacher: {
             id: 'demo-teacher-1',
             fullName: 'John Smith',
@@ -80,7 +104,7 @@ export default function CoursesPage() {
           status: CourseStatus.DRAFT,
           createdAt: new Date('2024-02-10'),
           updatedAt: new Date('2024-02-10'),
-          teacherId: user.role === UserRole.TEACHER ? user.id : 'demo-teacher-1',
+          teacherId: 'demo-teacher-1',
           teacher: {
             id: 'demo-teacher-1',
             fullName: 'John Smith',
@@ -92,14 +116,54 @@ export default function CoursesPage() {
           }
         }
       ];
-
-      // Filter courses based on user role
-      if (user.role === UserRole.TEACHER) {
-        setCourses(mockCourses.filter(course => course.teacherId === user.id));
-      } else {
-        setCourses(mockCourses.filter(course => course.status === CourseStatus.PUBLISHED));
-      }
+      localStorage.setItem('lms_courses', JSON.stringify(allCourses));
     }
+
+    return allCourses;
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    const allCourses = loadCourses();
+    
+    // Filter courses based on user role
+    if (isPrivilegedTeacher(user)) {
+      setCourses(allCourses);
+    } else if (user.role === UserRole.TEACHER) {
+      setCourses(allCourses.filter(course => course.teacherId === user.id));
+    } else {
+      setCourses(allCourses.filter(course => course.status === CourseStatus.PUBLISHED));
+    }
+  }, [user]);
+
+  // Listen for course updates from other tabs/pages
+  useEffect(() => {
+    let unsub: (() => void) | undefined;
+    (async () => {
+      try {
+        const { subscribe } = await import('../utils/stream');
+        unsub = subscribe((evt) => {
+          if (evt.type === 'courses:updated' && user) {
+            const allCourses = loadCourses();
+            
+            if (isPrivilegedTeacher(user)) {
+              setCourses(allCourses);
+            } else if (user.role === UserRole.TEACHER) {
+              setCourses(allCourses.filter(course => course.teacherId === user.id));
+            } else {
+              setCourses(allCourses.filter(course => course.status === CourseStatus.PUBLISHED));
+              addToast({
+                type: 'success',
+                title: 'New Course Published',
+                description: 'A new course is now available for enrollment.',
+                duration: 6000
+              });
+            }
+          }
+        });
+      } catch {}
+    })();
+    return () => { try { unsub && unsub(); } catch {} };
   }, [user]);
 
   // Filter courses based on search and filters

@@ -35,8 +35,10 @@ import {
   Star,
   Progress
 } from 'lucide-react';
-import { UserRole } from '../../types';
+import { UserRole, Course, CourseStatus } from '../../types';
 import Link from 'next/link';
+import { isPrivilegedTeacher } from '../../utils/permissions';
+import { useToast } from '../../components/ui/toast';
 
 export default function StudentDashboard() {
   const { user, logout, loading } = useAuth();
@@ -45,6 +47,9 @@ export default function StudentDashboard() {
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [availableCourses, setAvailableCourses] = useState<Course[]>([]);
+  const [recentResources, setRecentResources] = useState<any[]>([]);
+  const { addToast } = useToast();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -58,6 +63,70 @@ export default function StudentDashboard() {
       }
     }
   }, [user, loading, router]);
+
+  // Load available courses and recent resources
+  const loadData = () => {
+    // Load courses
+    const storedCourses = localStorage.getItem('lms_courses');
+    if (storedCourses) {
+      try {
+        const parsed = JSON.parse(storedCourses) as any[];
+        const courses = parsed.map(c => ({
+          ...c,
+          startDate: c.startDate ? new Date(c.startDate) : undefined,
+          endDate: c.endDate ? new Date(c.endDate) : undefined,
+          createdAt: new Date(c.createdAt),
+          updatedAt: new Date(c.updatedAt)
+        }));
+        // Show only published courses for students
+        setAvailableCourses(courses.filter(c => c.status === CourseStatus.PUBLISHED).slice(0, 3));
+      } catch {}
+    }
+    
+    // Load recent resources
+    const storedResources = localStorage.getItem('lms_resources');
+    if (storedResources) {
+      try {
+        const parsed = JSON.parse(storedResources) as any[];
+        const resources = parsed.map(r => ({ ...r, createdAt: new Date(r.createdAt) }));
+        setRecentResources(resources.slice(0, 5));
+      } catch {}
+    }
+  };
+
+  useEffect(() => {
+    if (user) loadData();
+  }, [user]);
+
+  // Listen for real-time updates
+  useEffect(() => {
+    let unsub: (() => void) | undefined;
+    (async () => {
+      try {
+        const { subscribe } = await import('../../utils/stream');
+        unsub = subscribe((evt) => {
+          if (evt.type === 'courses:updated') {
+            loadData();
+            addToast({
+              type: 'success',
+              title: 'New Course Available',
+              description: 'A new course has been published. Check it out!',
+              duration: 6000
+            });
+          } else if (evt.type === 'resources:updated') {
+            loadData();
+            addToast({
+              type: 'info',
+              title: 'New Resources Uploaded',
+              description: 'New study materials are now available.',
+              duration: 6000
+            });
+          }
+        });
+      } catch {}
+    })();
+    return () => { try { unsub && unsub(); } catch {} };
+  }, []);
 
   if (loading) {
     return (

@@ -11,6 +11,7 @@ import { Plus, Search, Calendar, Clock, FileText, Users, ChevronRight } from 'lu
 import Link from 'next/link';
 import { Assignment, AssignmentType, UserRole } from '../types';
 import { isPrivilegedTeacher } from '../utils/permissions';
+import { useToast } from '../components/ui/toast';
 
 export default function AssignmentsPage() {
   const { user, loading } = useAuth();
@@ -21,23 +22,41 @@ export default function AssignmentsPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'upcoming' | 'overdue' | 'completed'>('all');
   const [typeFilter, setTypeFilter] = useState<AssignmentType | 'ALL'>('ALL');
 
-  // Mock data for assignments
-  useEffect(() => {
-    if (user) {
+  const { addToast } = useToast();
+
+  // Load assignments from localStorage
+  const loadAssignments = () => {
+    const stored = localStorage.getItem('lms_assignments');
+    let allAssignments: Assignment[] = [];
+    
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored) as any[];
+        allAssignments = parsed.map(a => ({
+          ...a,
+          dueDate: new Date(a.dueDate),
+          createdAt: new Date(a.createdAt),
+          updatedAt: new Date(a.updatedAt)
+        }));
+      } catch {}
+    }
+    
+    // Seed if empty
+    if (allAssignments.length === 0 && user) {
       const now = new Date();
-      const mockAssignments: Assignment[] = [
+      allAssignments = [
         {
           id: '1',
           title: 'Math Problem Set 1',
           description: 'Complete exercises 1-10 from Chapter 2 on basic algebra.',
           type: AssignmentType.ESSAY,
           maxPoints: 50,
-          dueDate: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
+          dueDate: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000),
           isPublished: true,
-          createdAt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+          createdAt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
           updatedAt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
           courseId: '1',
-          teacherId: user.role === UserRole.TEACHER ? user.id : 'demo-teacher-1'
+          teacherId: 'demo-teacher-1'
         },
         {
           id: '2',
@@ -45,49 +64,64 @@ export default function AssignmentsPage() {
           description: 'Write a 500-word essay on the impacts of climate change on marine ecosystems.',
           type: AssignmentType.ESSAY,
           maxPoints: 100,
-          dueDate: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+          dueDate: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
           isPublished: true,
           createdAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
           updatedAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
           courseId: '3',
-          teacherId: user.role === UserRole.TEACHER ? user.id : 'demo-teacher-1'
-        },
-        {
-          id: '3',
-          title: 'Literature Analysis Quiz',
-          description: 'Multiple choice quiz covering Chapters 1-3 of "To Kill a Mockingbird".',
-          type: AssignmentType.MULTIPLE_CHOICE,
-          maxPoints: 75,
-          dueDate: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000), // 2 days ago (overdue)
-          isPublished: true,
-          createdAt: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000),
-          updatedAt: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000),
-          courseId: '2',
-          teacherId: user.role === UserRole.TEACHER ? user.id : 'demo-teacher-1'
-        },
-        {
-          id: '4',
-          title: 'Science Lab Report',
-          description: 'Complete lab report on photosynthesis experiment conducted last week.',
-          type: AssignmentType.PROJECT,
-          maxPoints: 80,
-          dueDate: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000), // 14 days from now
-          isPublished: false,
-          createdAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
-          updatedAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
-          courseId: '3',
-          teacherId: user.role === UserRole.TEACHER ? user.id : 'demo-teacher-1'
+          teacherId: 'demo-teacher-1'
         }
       ];
+      localStorage.setItem('lms_assignments', JSON.stringify(allAssignments));
+    }
+    
+    return allAssignments;
+  };
 
-      // Filter assignments based on user role
-      if (user.role === UserRole.TEACHER) {
-        setAssignments(mockAssignments.filter(assignment => assignment.teacherId === user.id));
-      } else {
-        setAssignments(mockAssignments.filter(assignment => assignment.isPublished));
-      }
+  useEffect(() => {
+    if (!user) return;
+    const allAssignments = loadAssignments();
+    
+    // Filter assignments based on user role
+    if (isPrivilegedTeacher(user)) {
+      setAssignments(allAssignments);
+    } else if (user.role === UserRole.TEACHER) {
+      setAssignments(allAssignments.filter(assignment => assignment.teacherId === user.id));
+    } else {
+      setAssignments(allAssignments.filter(assignment => assignment.isPublished));
     }
   }, [user]);
+
+  // Listen for assignment updates
+  useEffect(() => {
+    let unsub: (() => void) | undefined;
+    (async () => {
+      try {
+        const { subscribe } = await import('../utils/stream');
+        unsub = subscribe((evt) => {
+          if (evt.type === 'assignments:updated' && user) {
+            const allAssignments = loadAssignments();
+            
+            if (isPrivilegedTeacher(user)) {
+              setAssignments(allAssignments);
+            } else if (user.role === UserRole.TEACHER) {
+              setAssignments(allAssignments.filter(assignment => assignment.teacherId === user.id));
+            } else {
+              setAssignments(allAssignments.filter(assignment => assignment.isPublished));
+              // Show toast for students
+              addToast({
+                type: 'info',
+                title: 'New Assignment Available',
+                description: 'A new assignment has been posted. Check it out!',
+                duration: 6000
+              });
+            }
+          }
+        });
+      } catch {}
+    })();
+    return () => { try { unsub && unsub(); } catch {} };
+  }, [user, addToast]);
 
   // Filter assignments based on search and filters
   useEffect(() => {

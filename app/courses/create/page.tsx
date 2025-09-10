@@ -96,6 +96,12 @@ export default function CreateCoursePage() {
       existingCourses.push(newCourse);
       localStorage.setItem('lms_courses', JSON.stringify(existingCourses));
 
+      // Broadcast update so students see it immediately
+      try {
+        const { publish } = await import('../../utils/stream');
+        publish({ type: 'courses:updated' });
+      } catch {}
+
       // Redirect to courses page
       router.push('/courses');
     } catch (error) {

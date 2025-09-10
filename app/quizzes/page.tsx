@@ -11,6 +11,7 @@ import { Plus, Search, Clock, Users, CheckCircle, AlertCircle, BookOpen, Trophy 
 import Link from 'next/link';
 import { Quiz, UserRole, QuizAttempt, AttemptStatus } from '../types';
 import { isPrivilegedTeacher } from '../utils/permissions';
+import { useToast } from '../components/ui/toast';
 
 interface QuizWithAttempt extends Quiz {
   attemptCount?: number;
@@ -26,10 +27,32 @@ export default function QuizzesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'completed' | 'draft'>('all');
 
-  // Mock data for quizzes
-  useEffect(() => {
-    if (user) {
-      const mockQuizzes: QuizWithAttempt[] = [
+  const { addToast } = useToast();
+
+  // Load quizzes from localStorage
+  const loadQuizzes = () => {
+    const stored = localStorage.getItem('lms_quizzes');
+    let allQuizzes: QuizWithAttempt[] = [];
+    
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored) as any[];
+        allQuizzes = parsed.map(q => ({
+          ...q,
+          createdAt: new Date(q.createdAt),
+          updatedAt: new Date(q.updatedAt),
+          lastAttempt: q.lastAttempt ? {
+            ...q.lastAttempt,
+            startedAt: new Date(q.lastAttempt.startedAt),
+            completedAt: q.lastAttempt.completedAt ? new Date(q.lastAttempt.completedAt) : undefined
+          } : undefined
+        }));
+      } catch {}
+    }
+    
+    // Seed if empty
+    if (allQuizzes.length === 0 && user) {
+      allQuizzes = [
         {
           id: '1',
           title: 'Algebra Basics Quiz',
@@ -52,31 +75,10 @@ export default function QuizzesPage() {
               points: 5,
               order: 1,
               quizId: '1'
-            },
-            {
-              id: '2',
-              type: 'TRUE_FALSE' as any,
-              question: 'Linear equations always have exactly one solution.',
-              options: JSON.stringify(['True', 'False']),
-              correctAnswer: JSON.stringify('False'),
-              points: 3,
-              order: 2,
-              quizId: '1'
             }
           ],
           attemptCount: user.role === UserRole.STUDENT ? 2 : 0,
-          bestScore: user.role === UserRole.STUDENT ? 7 : undefined,
-          lastAttempt: user.role === UserRole.STUDENT ? {
-            id: '1',
-            score: 7,
-            maxScore: 8,
-            timeSpent: 1200, // 20 minutes
-            status: AttemptStatus.COMPLETED,
-            startedAt: new Date('2024-01-10T10:00:00'),
-            completedAt: new Date('2024-01-10T10:20:00'),
-            quizId: '1',
-            studentId: user.id
-          } : undefined
+          bestScore: user.role === UserRole.STUDENT ? 7 : undefined
         },
         {
           id: '2',
@@ -90,46 +92,61 @@ export default function QuizzesPage() {
           createdAt: new Date('2024-01-12'),
           updatedAt: new Date('2024-01-12'),
           courseId: '2',
-          questions: [
-            {
-              id: '3',
-              type: 'MULTIPLE_CHOICE' as any,
-              question: 'Who is the main character in "To Kill a Mockingbird"?',
-              options: JSON.stringify(['Atticus Finch', 'Scout Finch', 'Jem Finch', 'Tom Robinson']),
-              correctAnswer: JSON.stringify('Scout Finch'),
-              points: 4,
-              order: 1,
-              quizId: '2'
-            }
-          ],
+          questions: [],
           attemptCount: user.role === UserRole.STUDENT ? 1 : 0,
           bestScore: user.role === UserRole.STUDENT ? 12 : undefined
-        },
-        {
-          id: '3',
-          title: 'Science Fundamentals Assessment',
-          description: 'Comprehensive quiz covering basic principles of physics, chemistry, and biology.',
-          timeLimit: 60,
-          attempts: 1,
-          randomize: false,
-          showResults: true,
-          isPublished: false,
-          createdAt: new Date('2024-01-15'),
-          updatedAt: new Date('2024-01-15'),
-          courseId: '3',
-          questions: [],
-          attemptCount: 0
         }
       ];
+      localStorage.setItem('lms_quizzes', JSON.stringify(allQuizzes));
+    }
+    
+    return allQuizzes;
+  };
 
-      // Filter quizzes based on user role
-      if (user.role === UserRole.TEACHER) {
-        setQuizzes(mockQuizzes);
-      } else {
-        setQuizzes(mockQuizzes.filter(quiz => quiz.isPublished));
-      }
+  useEffect(() => {
+    if (!user) return;
+    const allQuizzes = loadQuizzes();
+    
+    // Filter quizzes based on user role
+    if (isPrivilegedTeacher(user)) {
+      setQuizzes(allQuizzes);
+    } else if (user.role === UserRole.TEACHER) {
+      setQuizzes(allQuizzes);
+    } else {
+      setQuizzes(allQuizzes.filter(quiz => quiz.isPublished));
     }
   }, [user]);
+
+  // Listen for quiz updates
+  useEffect(() => {
+    let unsub: (() => void) | undefined;
+    (async () => {
+      try {
+        const { subscribe } = await import('../utils/stream');
+        unsub = subscribe((evt) => {
+          if (evt.type === 'quizzes:updated' && user) {
+            const allQuizzes = loadQuizzes();
+            
+            if (isPrivilegedTeacher(user)) {
+              setQuizzes(allQuizzes);
+            } else if (user.role === UserRole.TEACHER) {
+              setQuizzes(allQuizzes);
+            } else {
+              setQuizzes(allQuizzes.filter(quiz => quiz.isPublished));
+              // Show toast for students
+              addToast({
+                type: 'info',
+                title: 'New Quiz Available',
+                description: 'A new quiz has been published. Test your knowledge!',
+                duration: 6000
+              });
+            }
+          }
+        });
+      } catch {}
+    })();
+    return () => { try { unsub && unsub(); } catch {} };
+  }, [user, addToast]);
 
   // Filter quizzes based on search and filters
   useEffect(() => {

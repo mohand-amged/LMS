@@ -11,6 +11,7 @@ import { Upload, File, Image as ImageIcon, Video, Music2, Archive, X, Search } f
 import Link from 'next/link';
 import { Resource, ResourceType, UserRole } from '../types';
 import { isPrivilegedTeacher } from '../utils/permissions';
+import { useToast } from '../components/ui/toast';
 
 interface LocalResource extends Resource {
   fileName?: string;
@@ -41,21 +42,34 @@ export default function ResourcesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<ResourceType | 'ALL'>('ALL');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const { addToast } = useToast();
 
   useEffect(() => {
     if (!loading && !user) router.push('/login');
   }, [user, loading, router]);
 
-  // Mock resources
+  // Load resources from localStorage (shared for all users)
   useEffect(() => {
-    if (user) {
-      const mock: LocalResource[] = [
-        { id: '1', title: 'Syllabus.pdf', type: ResourceType.DOCUMENT, url: '/files/syllabus.pdf', size: 120000, mimeType: 'application/pdf', createdAt: new Date('2024-01-01'), courseId: '1', fileName: 'Syllabus.pdf' },
-        { id: '2', title: 'Algebra Intro.mp4', type: ResourceType.VIDEO, url: 'https://example.com/video', size: 1200_000, mimeType: 'video/mp4', createdAt: new Date('2024-01-05'), courseId: '1', fileName: 'algebra.mp4' },
-        { id: '3', title: 'Reading List.png', type: ResourceType.IMAGE, url: '/files/reading-list.png', size: 80_000, mimeType: 'image/png', createdAt: new Date('2024-01-07'), courseId: '2', fileName: 'reading-list.png' },
-      ];
-      setResources(mock);
+    if (!user) return;
+    const stored = localStorage.getItem('lms_resources');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored) as any[];
+        setResources(parsed.map((r) => ({
+          ...r,
+          createdAt: new Date(r.createdAt),
+        })));
+        return;
+      } catch {}
     }
+    // Seed fallback demo data once if nothing stored
+    const mock: LocalResource[] = [
+      { id: '1', title: 'Syllabus.pdf', type: ResourceType.DOCUMENT, url: '/files/syllabus.pdf', size: 120000, mimeType: 'application/pdf', createdAt: new Date('2024-01-01'), courseId: '1', fileName: 'Syllabus.pdf' },
+      { id: '2', title: 'Algebra Intro.mp4', type: ResourceType.VIDEO, url: 'https://example.com/video', size: 1200000, mimeType: 'video/mp4', createdAt: new Date('2024-01-05'), courseId: '1', fileName: 'algebra.mp4' },
+      { id: '3', title: 'Reading List.png', type: ResourceType.IMAGE, url: '/files/reading-list.png', size: 80000, mimeType: 'image/png', createdAt: new Date('2024-01-07'), courseId: '2', fileName: 'reading-list.png' },
+    ];
+    setResources(mock);
+    localStorage.setItem('lms_resources', JSON.stringify(mock));
   }, [user]);
 
   // Filtering
@@ -100,13 +114,60 @@ export default function ResourcesPage() {
       };
     });
 
-    setResources((prev) => [...newItems, ...prev]);
+    // Persist for all users and broadcast
+    setResources((prev) => {
+      const updated = [...newItems, ...prev];
+      localStorage.setItem('lms_resources', JSON.stringify(updated));
+      return updated;
+    });
+    try {
+      const { publish } = await import('../utils/stream');
+      publish({ type: 'resources:updated' });
+    } catch {}
     e.target.value = '';
   };
 
-  const handleRemove = (id: string) => {
-    setResources(prev => prev.filter(r => r.id !== id));
+  const handleRemove = async (id: string) => {
+    setResources(prev => {
+      const updated = prev.filter(r => r.id !== id);
+      localStorage.setItem('lms_resources', JSON.stringify(updated));
+      return updated;
+    });
+    try {
+      const { publish } = await import('../utils/stream');
+      publish({ type: 'resources:updated' });
+    } catch {}
   };
+
+  // Listen for resource updates from other pages/tabs
+  useEffect(() => {
+    let unsub: (() => void) | undefined;
+    (async () => {
+      try {
+        const { subscribe } = await import('../utils/stream');
+        unsub = subscribe((evt) => {
+          if (evt.type === 'resources:updated') {
+            const stored = localStorage.getItem('lms_resources');
+            if (stored) {
+              try {
+                const parsed = JSON.parse(stored) as any[];
+                setResources(parsed.map((r) => ({ ...r, createdAt: new Date(r.createdAt) })));
+                if (user?.role === UserRole.STUDENT) {
+                  addToast({
+                    type: 'info',
+                    title: 'Resources Updated',
+                    description: 'New study materials have been added.',
+                    duration: 5000
+                  });
+                }
+              } catch {}
+            }
+          }
+        });
+      } catch {}
+    })();
+    return () => { try { unsub && unsub(); } catch {} };
+  }, []);
 
   if (loading || !user) {
     return (
