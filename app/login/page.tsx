@@ -32,7 +32,9 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(formData);
+      const userRecord = await login(formData);
+      // The login function updates the auth context, let's use a callback approach
+      // For now, redirect to main dashboard - it will handle role-based redirection
       router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
