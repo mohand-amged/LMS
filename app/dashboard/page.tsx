@@ -43,11 +43,11 @@ export default function DashboardPage() {
     if (!loading && !user) {
       router.push('/login');
     } else if (!loading && user) {
-      // Redirect to role-specific dashboard
+      // Redirect to separate role-specific dashboards
       if (user.role === UserRole.TEACHER) {
-        router.push('/dashboard/teacher');
+        router.push('/teacher-dashboard');
       } else if (user.role === UserRole.STUDENT) {
-        router.push('/dashboard/student');
+        router.push('/student-dashboard');
       }
       // Admins stay on the main dashboard
     }
